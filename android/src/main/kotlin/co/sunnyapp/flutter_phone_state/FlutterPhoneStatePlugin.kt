@@ -20,7 +20,7 @@ class FlutterPhoneStatePlugin: FlutterPlugin, MethodCallHandler, EventChannel.St
     private lateinit var telephonyManager: TelephonyManager
 
     /// So it doesn't get collected
-    private lateinit var listener:PhoneStateListener
+    private var listener: PhoneStateListener? = null
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         binding = flutterPluginBinding
@@ -29,7 +29,7 @@ class FlutterPhoneStatePlugin: FlutterPlugin, MethodCallHandler, EventChannel.St
         eventSink = EventChannel(flutterPluginBinding.binaryMessenger, "co.sunnyapp/phone_events")
         eventSink.setStreamHandler(this)
         context = flutterPluginBinding.applicationContext
-        telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+        telephonyManager = binding.applicationContext.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
     }
 
 
@@ -72,7 +72,10 @@ class FlutterPhoneStatePlugin: FlutterPlugin, MethodCallHandler, EventChannel.St
                 }
             }
         }
-        telephonyManager.listen(listener, PhoneStateListener.LISTEN_CALL_STATE)
+
+        if (listener != null) {
+            telephonyManager.listen(listener, PhoneStateListener.LISTEN_CALL_STATE)
+        }
     }
 
     override fun onCancel(arguments: Any?) {

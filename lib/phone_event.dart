@@ -139,6 +139,7 @@ class PhoneCall {
         return event;
       }
     }
+    return null;
   }
 
   /// The duration of this call.  This duration will represent the elasped time, until the call

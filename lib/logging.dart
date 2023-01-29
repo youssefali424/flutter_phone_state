@@ -23,14 +23,14 @@ Future<void> configureLogging({
 }
 
 Logging defaultLogging(Logger logger) {
-  var _sequence = 0;
+  var sequence = 0;
   return (LogRecord rec) {
     if (rec.loggerName == logger.name && rec.level >= logger.level) {
-      _sequence++;
+      sequence++;
       log(
         rec.message,
         time: rec.time,
-        sequenceNumber: _sequence,
+        sequenceNumber: sequence,
         level: rec.level.value,
         name: rec.loggerName,
         error: rec.error,

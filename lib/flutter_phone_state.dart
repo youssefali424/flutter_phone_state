@@ -1,8 +1,10 @@
 import 'dart:async';
-import 'package:logging/logging.dart';
-import 'package:url_launcher/url_launcher.dart';
+
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:logging/logging.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import 'extensions_static.dart';
 import 'logging.dart';
 import 'phone_event.dart';
@@ -46,7 +48,7 @@ class FlutterPhoneState with WidgetsBindingObserver {
 
   FlutterPhoneState() {
     configureLogging(logger: _log);
-    WidgetsBinding.instance?.addObserver(this);
+    WidgetsBinding.instance.addObserver(this);
     _initializedNativeEvents.forEach(_handleRawPhoneEvent);
   }
 
@@ -63,7 +65,8 @@ class FlutterPhoneState with WidgetsBindingObserver {
     if (event.id != null) {
       matching = firstOrNull(_calls, (c) => c?.callId == event.id);
     }
-    matching ??= lastOrNull(_calls, (call) => call?.canBeLinked(event) ?? false);
+    matching ??=
+        lastOrNull(_calls, (call) => call?.canBeLinked(event) ?? false);
     if (matching != null) {
       // Link them together for future reference
       matching.callId = event.id;
@@ -80,7 +83,8 @@ class FlutterPhoneState with WidgetsBindingObserver {
       Future.delayed(Duration(seconds: 1), () {
         final expired = lastOrNull<PhoneCall?>(_calls, (PhoneCall? c) {
           if (c != null) {
-            return c.status == PhoneCallStatus.dialing && sinceNow(c.startTime).inSeconds < 30;
+            return c.status == PhoneCallStatus.dialing &&
+                sinceNow(c.startTime).inSeconds < 30;
           } else {
             return false;
           }
@@ -162,11 +166,17 @@ class FlutterPhoneState with WidgetsBindingObserver {
         _log.info('Adding a call to the stack: $event');
         matching = PhoneCall.start(
           event.phoneNumber,
-          event.type == RawEventType.inbound ? PhoneCallPlacement.inbound : PhoneCallPlacement.outbound,
+          event.type == RawEventType.inbound
+              ? PhoneCallPlacement.inbound
+              : PhoneCallPlacement.outbound,
           event.id,
         );
         _calls.add(matching);
-        _changeStatus(matching, matching.isInbound ? PhoneCallStatus.ringing : PhoneCallStatus.dialing);
+        _changeStatus(
+            matching,
+            matching.isInbound
+                ? PhoneCallStatus.ringing
+                : PhoneCallStatus.dialing);
         return;
       }
 
@@ -205,24 +215,28 @@ class FlutterPhoneState with WidgetsBindingObserver {
 }
 
 /// The event channel to receive native phone events
-final EventChannel _phoneStateCallEventChannel = EventChannel('co.sunnyapp/phone_events');
+final EventChannel _phoneStateCallEventChannel =
+    EventChannel('co.sunnyapp/phone_events');
 
 /// Native event stream, lazily created.  See [nativeEvents]
 Stream<RawPhoneEvent?>? _nativeEvents;
 
 /// A stream of [RawPhoneEvent] instances.  The stream only contains null values if there was an error
 Stream<RawPhoneEvent?> get _initializedNativeEvents {
-  _nativeEvents ??= _phoneStateCallEventChannel.receiveBroadcastStream().map((dyn) {
+  _nativeEvents ??=
+      _phoneStateCallEventChannel.receiveBroadcastStream().map((dyn) {
     try {
       if (dyn == null) return null;
       if (dyn is! Map) {
         _log.warning('Unexpected result type for phone event.  '
             "Expected Map<String, dynamic> but got ${dyn?.runtimeType ?? 'null'} ");
       }
-      final event = Map<String, dynamic>.from(dyn);
+      final event = (dyn as Map).cast();
       return RawPhoneEvent(
         (event['id'] is String) ? event['id'] as String : null,
-        (event['phoneNumber'] is String) ? event['phoneNumber'] as String : null,
+        (event['phoneNumber'] is String)
+            ? event['phoneNumber'] as String
+            : null,
         _parseEventType(event['type'] as String),
       );
     } catch (e, stack) {
@@ -272,8 +286,11 @@ Future<LinkOpenResult> _openTelLink(String? appLink) async {
   if (appLink == null) {
     return LinkOpenResult.invalidInput;
   }
-  if (await canLaunch(appLink)) {
-    return (await launch(appLink)) ? LinkOpenResult.success : LinkOpenResult.failed;
+  final Uri uri = Uri.parse(appLink);
+  if (await canLaunchUrl(uri)) {
+    return (await launchUrl(uri))
+        ? LinkOpenResult.success
+        : LinkOpenResult.failed;
   } else {
     return LinkOpenResult.unsupported;
   }
